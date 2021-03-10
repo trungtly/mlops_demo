@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent / 'src'))
 
 from fraud_detection.data.ingestion import FraudDataIngestion
+from fraud_detection.config import config
 
 
 def setup_logging(log_level: str = 'INFO'):
@@ -115,45 +116,13 @@ def main():
         # Initialize data ingestion
         data_ingestion = FraudDataIngestion()
         
-        # Check if file already exists
-        if args.dataset == 'creditcard':
-            output_file = output_dir / 'creditcard.csv'
-            
-            if output_file.exists() and not args.force_download:
-                logger.info(f"File already exists: {output_file}")
-                logger.info("Use --force-download to re-download")
-                
-                if args.validate:
-                    df = data_ingestion.load_local_data(str(output_file))
-                    validate_data(df, args.dataset)
-                
-                return
-            
-            # Download dataset
-            logger.info("Downloading credit card fraud dataset from Kaggle")
-            df = data_ingestion.download_creditcard_data()
-            
-            # Save to specified location
-            logger.info(f"Saving dataset to {output_file}")
-            df.to_csv(output_file, index=False)
-            
-        elif args.dataset == 'synthetic':
-            output_file = output_dir / 'synthetic_fraud.csv'
-            
-            if output_file.exists() and not args.force_download:
-                logger.info(f"File already exists: {output_file}")
-                logger.info("Use --force-download to re-download")
-                return
-            
-            # Generate synthetic dataset
-            logger.info("Generating synthetic fraud dataset")
-            df = data_ingestion.generate_synthetic_data(n_samples=100000)
-            
-            # Save to specified location
-            logger.info(f"Saving dataset to {output_file}")
-            df.to_csv(output_file, index=False)
+        # Run the full ingestion pipeline
+        df, info = data_ingestion.run_full_ingestion(
+            dataset_type=args.dataset,
+            force_download=args.force_download
+        )
         
-        # Validate if requested
+        # If validation is requested
         if args.validate:
             validate_data(df, args.dataset)
         
@@ -164,14 +133,23 @@ def main():
         print("DOWNLOAD SUMMARY")
         print("="*50)
         print(f"Dataset: {args.dataset}")
-        print(f"Output file: {output_file}")
+        
+        raw_file_path = Path(config.RAW_DATA_DIR) / f"{args.dataset}.csv"
+        print(f"Raw data file: {raw_file_path}")
         print(f"Dataset shape: {df.shape}")
-        print(f"File size: {output_file.stat().st_size / (1024*1024):.1f} MB")
+        print(f"File size: {raw_file_path.stat().st_size / (1024*1024):.1f} MB")
         
         if 'Class' in df.columns:
             print(f"Fraud rate: {df['Class'].mean():.4f}")
-            print(f"Fraud samples: {df['Class'].sum()}")
-            print(f"Normal samples: {(df['Class'] == 0).sum()}")
+            print(f"Fraud samples: {int(df['Class'].sum())}")
+            print(f"Normal samples: {int((df['Class'] == 0).sum())}")
+        
+        # Print data split information
+        print("\nData splits:")
+        for split_name, split_path in info['data_splits'].items():
+            path = Path(split_path)
+            if path.exists():
+                print(f"  {split_name}: {split_path} ({path.stat().st_size / (1024*1024):.1f} MB)")
         
         print("="*50)
         
