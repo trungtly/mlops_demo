@@ -2,7 +2,7 @@
 
 A comprehensive MLOps demonstration project for credit card fraud detection, showcasing production-ready machine learning practices including data validation, experiment tracking, model serving, monitoring, and CI/CD automation.
 
-## 🎯 Project Overview
+## Project Overview
 
 This project demonstrates end-to-end MLOps practices for building a production-grade fraud detection system:
 
@@ -11,7 +11,7 @@ This project demonstrates end-to-end MLOps practices for building a production-g
 - **Approach**: Cost-sensitive learning with proper evaluation metrics
 - **Architecture**: Modular, testable, and scalable design
 
-## 🏗️ Architecture
+## Repository Structure
 
 ```
 ├── src/fraud_detection/        # Main source code
@@ -29,22 +29,29 @@ This project demonstrates end-to-end MLOps practices for building a production-g
 └── docs/                      # Documentation
 ```
 
-## 🚀 Quick Start
+## Documentation Links
+
+- [Project Report](docs/project_report.pdf) - Detailed report on methodology and results
+- [EDA Notebook](notebooks/01_eda.ipynb) - Exploratory data analysis of credit card transactions
+- [Feature Engineering Notebook](notebooks/02_feature_engineering.ipynb) - Feature creation and selection
+- [Model Development Notebook](notebooks/03_model_development.ipynb) - Model training and evaluation
+- [Monitoring Configuration](configs/monitoring.yaml) - Configuration for drift detection
+
+## Quick Start
 
 ### 1. Environment Setup
 
 ```bash
 # Clone repository
-git clone <your-repo-url>
+git clone https://github.com/yourusername/mlops_demo.git
 cd mlops_demo
 
 # Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python -m venv mlops_venv
+source mlops_venv/bin/activate  # On Windows: mlops_venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
-pip install -e .
 ```
 
 ### 2. Data Download
@@ -56,174 +63,95 @@ python scripts/download_data.py
 # Or manually download from Kaggle and place in data/raw/
 ```
 
-### 3. Training Pipeline
+### 3. Run Notebooks
 
 ```bash
-# Run complete training pipeline
-python scripts/train_model.py --config configs/training.yaml
+# Start Jupyter notebook server
+jupyter notebook
 
-# Or run individual steps
-python -m fraud_detection.data.ingestion
-python -m fraud_detection.training.train
+# Open notebooks in order:
+# 1. notebooks/01_eda.ipynb
+# 2. notebooks/02_feature_engineering.ipynb
+# 3. notebooks/03_model_development.ipynb
 ```
 
-### 4. Model Evaluation
+### 4. Run Monitoring Script
 
 ```bash
-# Evaluate model performance
-python scripts/evaluate_model.py --model-path artifacts/models/best_model.pkl
+# Execute monitoring script
+python scripts/run_monitoring.py --config configs/monitoring.yaml
 ```
 
-### 5. Serve Model
+## Data Pipeline
+
+- **Data Source**: [Credit Card Fraud Detection Dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)
+- **Feature Engineering**: Time-based features, amount transformations, feature selection
+- **Class Imbalance Handling**: SMOTE, SMOTE-Tomek, cost-sensitive learning
+
+## Model Development
+
+The project implements multiple models for fraud detection:
+
+| Model | PR-AUC | ROC-AUC | F1 Score | Precision | Recall |
+|-------|--------|---------|----------|-----------|--------|
+| XGBoost (Tuned) | 0.9054 | 0.9967 | 0.7761 | 0.9231 | 0.6701 |
+| Stacking Classifier | 0.9084 | 0.9962 | 0.7807 | 0.9149 | 0.6804 |
+| Voting Classifier | 0.8609 | 0.9951 | 0.7342 | 0.8600 | 0.6392 |
+
+For details on hyperparameters, feature importance, and model selection, see [Model Development Notebook](notebooks/03_model_development.ipynb).
+
+## Monitoring and Drift Detection
+
+The project includes a comprehensive monitoring system for:
+
+- **Feature Drift Detection**: Using statistical tests to detect distribution shifts
+- **Performance Monitoring**: Tracking precision, recall, and F1-score over time
+- **Data Quality Checks**: Validating incoming data against expectations
+
+Configuration for monitoring is available in [configs/monitoring.yaml](configs/monitoring.yaml).
+
+## Testing
 
 ```bash
-# Start API server
-python scripts/serve_model.py
-
-# Test endpoint
-curl -X POST "http://localhost:8000/predict" \
-     -H "Content-Type: application/json" \
-     -d '{"features": [0.1, 0.2, ..., 0.3]}'
-```
-
-## 📊 Model Performance
-
-Our production model achieves:
-- **ROC AUC**: 0.999+
-- **PR AUC**: 0.85+
-- **Recall@1% FPR**: 0.92+
-- **F1 Score**: 0.88+
-
-*Optimized for high recall to minimize missed fraud cases while maintaining acceptable precision.*
-
-## 🔧 Key Features
-
-### Data Pipeline
-- ✅ Robust data validation with Great Expectations
-- ✅ Feature engineering for temporal patterns
-- ✅ Proper train/validation/test splits
-- ✅ Data versioning and lineage tracking
-
-### Model Development
-- ✅ Multiple algorithms (XGBoost, LightGBM, Neural Networks)
-- ✅ Hyperparameter optimization with Optuna
-- ✅ Cross-validation with stratified sampling
-- ✅ Cost-sensitive learning approaches
-
-### MLOps Infrastructure
-- ✅ Experiment tracking with MLflow
-- ✅ Model registry and versioning
-- ✅ Automated testing (unit, integration, data)
-- ✅ CI/CD with GitHub Actions
-- ✅ Container-based deployment
-- ✅ Model monitoring and drift detection
-
-### Production Serving
-- ✅ FastAPI-based REST API
-- ✅ Input validation and preprocessing
-- ✅ Batch prediction support
-- ✅ Health checks and monitoring endpoints
-- ✅ Configurable decision thresholds
-
-## 🧪 Testing
-
-```bash
-# Run all tests
+# Run tests
 pytest tests/ -v
-
-# Run specific test types
-pytest tests/unit/ -v --cov=fraud_detection
-pytest tests/integration/ -v
-pytest tests/data/ -v
-
-# Generate coverage report
-pytest tests/ --cov=fraud_detection --cov-report=html
 ```
 
-## 📈 Experiment Tracking
+## Visualization Samples
 
-We use MLflow for comprehensive experiment tracking:
+The following visualizations are generated during analysis:
 
-```bash
-# Start MLflow UI
-mlflow ui --host 0.0.0.0 --port 5000
+- Class distribution analysis ([view](images/class_distribution.png))
+- Feature importance ([view](images/feature_importance.png))
+- Time-based features ([view](images/time_features.png))
+- Amount transformations ([view](images/amount_transformations.png))
+- Model performance comparison ([view](images/model_comparison.png))
 
-# Access at http://localhost:5000
-```
+## Results
 
-Track:
-- Model parameters and hyperparameters
-- Training and validation metrics
-- Model artifacts and preprocessing pipelines
-- Data versions and feature importance
-- Model performance over time
+Our final model achieves:
+- **PR-AUC**: 0.9084 (Stacking Classifier)
+- **ROC-AUC**: 0.9962 (Stacking Classifier)
+- **F1-Score**: 0.7807 (Stacking Classifier)
+- **Precision**: 0.9149 (Stacking Classifier)
+- **Recall**: 0.6804 (Stacking Classifier)
 
-## 🚀 Deployment
+For complete results, see the [Project Report](docs/project_report.pdf).
 
-### Local Development
-```bash
-# Build Docker image
-docker build -t fraud-detection:latest .
+## Future Work
 
-# Run container
-docker run -p 8000:8000 fraud-detection:latest
-```
+- Integration with real-time streaming data
+- Explainability enhancements for model decisions
+- Active learning implementation for reducing false positives
+- Enhanced visualization dashboard for monitoring
 
-### Production Deployment
-```bash
-# Deploy with docker-compose
-docker-compose up -d
+## References
 
-# Or deploy to cloud (examples provided for AWS/GCP)
-```
+1. Kaggle Credit Card Fraud Dataset: https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
+2. Made With ML (MLOps Best Practices): https://madewithml.com/
+3. Sahin, Y., & Duman, E. (2011). Detecting credit card fraud by ANN and logistic regression. 2011 International Symposium on Innovations in Intelligent Systems and Applications.
+4. Dal Pozzolo, A., et al. (2015). Calibrating Probability with Undersampling for Unbalanced Classification.
 
-## 📊 Monitoring
-
-The system includes comprehensive monitoring:
-
-- **Data Drift Detection**: Statistical tests on input features
-- **Model Performance**: Real-time metrics tracking
-- **System Health**: API response times, error rates
-- **Business Impact**: Fraud detection rates, false positive costs
-
-```bash
-# Run monitoring dashboard
-python -m fraud_detection.monitoring.dashboard
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 Documentation
-
-- [Model Card](docs/model_card.md) - Model details and performance
-- [Data Card](docs/data_card.md) - Dataset information and preprocessing
-- [API Documentation](docs/api_docs.md) - REST API reference
-- [Deployment Guide](docs/deployment.md) - Production deployment instructions
-
-## 🔒 Security Considerations
-
-- Input validation and sanitization
-- Model artifact integrity verification
-- Secure credential management
-- API rate limiting and authentication
-- Data privacy and compliance (PCI DSS considerations)
-
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [Made With ML](https://madewithml.com/) for MLOps best practices inspiration
-- [Kaggle Credit Card Fraud Dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)
-- Open source ML/MLOps community
-
----
-
-*This project demonstrates production-ready MLOps practices. For questions or suggestions, please open an issue.*
