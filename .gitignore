@@ -67,4 +67,9 @@ htmlcov/
 .pytest_cache/
 
 # MLflow
-mlruns/
+mlruns/-e 
+# macOS
+.DS_Store
+
+# Data files
+*.zip
