@@ -1,0 +1,25 @@
+{
+    "model_name": "LightGBM (Tuned)",
+    "model_type": "LightGBM",
+    "creation_date": "2025-09-21 19:57:46",
+    "hyperparameters": {
+        "learning_rate": 0.1,
+        "max_depth": 7,
+        "n_estimators": 200,
+        "num_leaves": 63
+    },
+    "performance_metrics": {
+        "test_accuracy": 0.999815345655347,
+        "test_precision": 0.999683533176272,
+        "test_recall": 0.9999472416158135,
+        "test_f1": 0.9998153700072973,
+        "test_roc_auc": 0.9999919249106853,
+        "test_pr_auc": 0.9999910948081486
+    },
+    "optimal_threshold": 0.7861868149083883,
+    "feature_count": 50,
+    "training_samples": 454904,
+    "test_samples": 113726,
+    "dataset_used": "SMOTE balanced",
+    "cv_score": 0.9999955968527624
+}
