@@ -25,6 +25,7 @@ from prometheus_client import Counter, Histogram, Gauge, generate_latest
 
 try:
     from ..config import config
+    from ..features.schema import compatibility_layer, feature_schema
 except ImportError:
     # Fallback config for standalone usage
     class Config:
@@ -33,6 +34,14 @@ except ImportError:
         API_WORKERS = 1
         MODELS_DIR = Path("models")
     config = Config()
+    
+    # Import compatibility layer with fallback
+    try:
+        from fraud_detection.features.schema import compatibility_layer, feature_schema
+    except ImportError:
+        # Create basic compatibility layer if not available
+        compatibility_layer = None
+        feature_schema = None
 
 logger = logging.getLogger(__name__)
 
@@ -153,17 +162,23 @@ class FraudDetectionService:
             self.load_model(model_path)
     
     def load_model(self, model_path: str) -> None:
-        """Load trained model and preprocessor."""
+        """Load trained model with feature compatibility."""
         try:
             model_path = Path(model_path)
             
             if not model_path.exists():
                 raise FileNotFoundError(f"Model file not found: {model_path}")
             
-            self.model = joblib.load(model_path)
-            self.model_version = model_path.parent.name  # Use directory name as version
+            # Use compatibility layer if available
+            if compatibility_layer is not None:
+                self.model = compatibility_layer.load_compatible_model(str(model_path))
+                logger.info(f"Model loaded with compatibility layer: {model_path}")
+            else:
+                # Fallback to direct loading
+                self.model = joblib.load(model_path)
+                logger.info(f"Model loaded directly: {model_path}")
             
-            logger.info(f"Model loaded successfully from {model_path}")
+            self.model_version = model_path.stem  # Use filename as version
             logger.info(f"Model version: {self.model_version}")
             
         except Exception as e:
@@ -202,11 +217,17 @@ class FraudDetectionService:
             raise HTTPException(status_code=503, detail="Model not loaded")
         
         try:
-            # Preprocess features
-            X = self.preprocess_features(features)
+            # Use compatibility layer if available
+            if compatibility_layer is not None:
+                # Convert features to dict for compatibility layer
+                feature_dict = features.dict()
+                fraud_probabilities = self.model.predict_proba(feature_dict)
+                fraud_probability = fraud_probabilities[0, 1] if fraud_probabilities.ndim > 1 else fraud_probabilities[0]
+            else:
+                # Fallback to traditional preprocessing
+                X = self.preprocess_features(features)
+                fraud_probability = self.model.predict_proba(X)[0, 1]
             
-            # Make prediction
-            fraud_probability = self.model.predict_proba(X)[0, 1]
             is_fraud = fraud_probability >= self.threshold
             
             # Calculate confidence and risk score
