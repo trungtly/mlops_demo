@@ -106,6 +106,55 @@ docker-run:
 docker-run-dev:
 	docker run -p 8000:8000 -v $(PWD):/app fraud-detection
 
+# Docker Compose - Full MLOps Stack
+docker-up:
+	docker-compose up -d
+
+docker-up-build:
+	docker-compose up -d --build
+
+docker-down:
+	docker-compose down
+
+docker-down-volumes:
+	docker-compose down -v
+
+docker-logs:
+	docker-compose logs -f
+
+docker-logs-api:
+	docker-compose logs -f fraud-detection-api
+
+docker-logs-monitoring:
+	docker-compose logs -f prometheus grafana
+
+docker-restart:
+	docker-compose restart
+
+docker-status:
+	docker-compose ps
+
+# Production MLOps Stack
+prod-deploy: docker-up-build
+	@echo "Production MLOps stack deployed!"
+	@echo "API: http://localhost:8000"
+	@echo "Grafana: http://localhost:3000 (admin/admin123)"
+	@echo "Prometheus: http://localhost:9090"
+
+prod-status:
+	@echo "=== MLOps Stack Status ==="
+	docker-compose ps
+	@echo ""
+	@echo "=== Health Checks ==="
+	curl -s http://localhost:8000/health | jq . || echo "API not responding"
+	curl -s http://localhost:9090/-/healthy || echo "Prometheus not responding"
+	curl -s http://localhost:3000/api/health | jq . || echo "Grafana not responding"
+
+prod-monitoring:
+	@echo "Opening monitoring dashboards..."
+	@echo "Grafana: http://localhost:3000"
+	@echo "Prometheus: http://localhost:9090"
+
 # MLflow
 mlflow-ui:
 	mlflow ui --host 0.0.0.0 --port 5000

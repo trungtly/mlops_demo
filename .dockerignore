@@ -1,0 +1,64 @@
+# Git and version control
+.git
+.gitignore
+*.md
+CHANGELOG.md
+
+# Python cache and virtual environments
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv
+venv/
+.env
+
+# Jupyter notebooks and temporary files
+*.ipynb
+.ipynb_checkpoints
+*.tmp
+*.temp
+
+# Development and testing
+tests/
+.pytest_cache
+.coverage
+.tox
+.mypy_cache
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Data files (should be mounted as volumes)
+data/
+*.csv
+*.pkl
+*.parquet
+
+# Documentation and images
+docs/
+images/
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# CI/CD and deployment
+.github/
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Logs and monitoring (should be volumes)
+logs/
+*.log
+monitoring/
