@@ -1,0 +1,21 @@
+{
+  "model_name": "LightGBM Advanced Fraud Detection",
+  "dataset_size": 284807,
+  "feature_count": 50,
+  "training_samples": 227845,
+  "test_samples": 56962,
+  "fraud_rate": "0.1720%",
+  "total_fraud_cases": 98,
+  "model_metrics": {
+    "roc_auc": "0.071904",
+    "optimal_threshold": "inf",
+    "optimal_tpr": "0.000000",
+    "optimal_fpr": "0.000000"
+  },
+  "business_impact": {
+    "total_fraud_amount": "$10026.61",
+    "max_preventable": "$46.04",
+    "optimal_net_benefit": "$-34854.29"
+  },
+  "execution_time": "2025-09-22 06:43:28.171581"
+}

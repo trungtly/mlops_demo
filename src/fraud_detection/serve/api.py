@@ -1,9 +1,18 @@
-"""FastAPI application for fraud detection service."""
+"""
+Production MLOps Deployment System
+=================================
+
+Enterprise-grade FastAPI application for fraud detection service with
+advanced monitoring, caching, and production-ready features.
+"""
 
 import logging
 import time
+import json
+import hashlib
 from typing import List, Dict, Any, Optional
 from pathlib import Path
+from datetime import datetime
 
 import joblib
 import numpy as np
@@ -12,10 +21,27 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
 import uvicorn
+from prometheus_client import Counter, Histogram, Gauge, generate_latest
 
-from ..config import config
+try:
+    from ..config import config
+except ImportError:
+    # Fallback config for standalone usage
+    class Config:
+        API_HOST = "0.0.0.0"
+        API_PORT = 8000
+        API_WORKERS = 1
+        MODELS_DIR = Path("models")
+    config = Config()
 
 logger = logging.getLogger(__name__)
+
+# Prometheus metrics for production monitoring
+PREDICTION_COUNTER = Counter('fraud_predictions_total', 'Total fraud predictions', ['model_version', 'prediction'])
+PREDICTION_LATENCY = Histogram('fraud_prediction_duration_seconds', 'Prediction latency')
+MODEL_ACCURACY = Gauge('fraud_model_accuracy', 'Current model accuracy')
+DRIFT_SCORE = Gauge('fraud_data_drift_score', 'Data drift score')
+ERROR_COUNTER = Counter('fraud_prediction_errors_total', 'Total prediction errors')
 
 
 class TransactionFeatures(BaseModel):
