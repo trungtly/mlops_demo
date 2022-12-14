@@ -1,11 +1,27 @@
 name: Model Deployment
 
+# Disabled - uncomment to re-enable workflows
+# on:
+#   workflow_run:
+#     workflows: ["Model Training and Validation"]
+#     types:
+#       - completed
+#   workflow_dispatch:
+#     inputs:
+#       model_name:
+#         description: 'Model name to deploy'
+#         required: true
+#         default: 'best_model'
+#       environment:
+#         description: 'Deployment environment'
+#         required: true
+#         default: 'staging'
+#         type: choice
+#         options:
+#         - staging
+#         - production
 on:
-  workflow_run:
-    workflows: ["Model Training and Validation"]
-    types:
-      - completed
-  workflow_dispatch:
+  workflow_dispatch: # Manual trigger only
     inputs:
       model_name:
         description: 'Model name to deploy'
@@ -109,8 +125,8 @@ jobs:
         # For example: kubectl, docker-compose, cloud provider CLI, etc.
         
         # Mock deployment
-        echo "✅ Deployed fraud-detection-api:${{ github.sha }} to staging"
-        echo "📍 Staging URL: https://fraud-detection-staging.example.com"
+        echo "Deployed fraud-detection-api:${{ github.sha }} to staging"
+        echo "Staging URL: https://fraud-detection-staging.example.com"
 
     - name: Deploy to production
       if: ${{ github.event.inputs.environment == 'production' }}
@@ -120,8 +136,8 @@ jobs:
         # with additional safety checks and rollback capabilities
         
         # Mock deployment
-        echo "✅ Deployed fraud-detection-api:${{ github.sha }} to production"
-        echo "📍 Production URL: https://fraud-detection.example.com"
+        echo "Deployed fraud-detection-api:${{ github.sha }} to production"
+        echo "Production URL: https://fraud-detection.example.com"
 
     - name: Run smoke tests
       run: |
@@ -143,15 +159,15 @@ jobs:
         
         for test in tests:
             time.sleep(1)
-            result = '✅ PASS' if random.random() > 0.1 else '❌ FAIL'
+            result = 'PASS' if random.random() > 0.1 else 'FAIL'
             print(f'{result} {test}')
         
-        print('\\n🎉 All smoke tests passed!')
+        print('\\nAll smoke tests passed!')
         "
 
     - name: Notify deployment
       run: |
-        echo "🚀 Deployment completed successfully!"
+        echo "Deployment completed successfully!"
         echo "Environment: ${{ github.event.inputs.environment || 'staging' }}"
         echo "Image: fraud-detection-api:${{ github.sha }}"
         echo "Commit: ${{ github.sha }}"

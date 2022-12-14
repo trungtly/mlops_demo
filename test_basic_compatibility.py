@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def test_basic_functionality():
     """Test basic functionality without heavy dependencies"""
-    print("🔧 Testing Basic Feature Compatibility")
+    print("Testing Basic Feature Compatibility")
     print("=" * 50)
     
     try:
@@ -21,7 +21,7 @@ def test_basic_functionality():
         from src.fraud_detection.features.schema import FeatureSchema
         schema = FeatureSchema()
         
-        print(f"✅ Feature schema loaded: {len(schema.feature_names)} features")
+        print(f"Feature schema loaded: {len(schema.feature_names)} features")
         print(f"   First 5 features: {schema.feature_names[:5]}")
         
         # Test sample data transformation
@@ -35,21 +35,21 @@ def test_basic_functionality():
         
         # Test transformation
         transformed = schema.transform_to_schema(sample_data)
-        print(f"✅ Data transformation: {transformed.shape}")
+        print(f"Data transformation: {transformed.shape}")
         
         # Test dict input
         dict_input = {'V1': 1.0, 'V2': 2.0, 'Amount': 100.0, 'Time': 12345}
         compatible_input = schema.create_compatible_input(dict_input)
-        print(f"✅ Compatible input: shape {compatible_input.shape}")
+        print(f"Compatible input: shape {compatible_input.shape}")
         
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
         import traceback
         traceback.print_exc()
 
 def test_model_files():
     """Test model file discovery"""
-    print("\n🔧 Testing Model File Discovery")
+    print("\nTesting Model File Discovery")
     print("=" * 50)
     
     import os
@@ -69,11 +69,11 @@ def test_model_files():
             print(f"  - {f}")
             
     else:
-        print("❌ Models directory not found")
+        print("Models directory not found")
 
 def test_direct_model_loading():
     """Test direct model loading"""
-    print("\n🔧 Testing Direct Model Loading")
+    print("\nTesting Direct Model Loading")
     print("=" * 50)
     
     try:
@@ -82,23 +82,23 @@ def test_direct_model_loading():
         
         if os.path.exists(model_path):
             model = joblib.load(model_path)
-            print(f"✅ Model loaded: {type(model)}")
+            print(f"Model loaded: {type(model)}")
             
             # Test with dummy data
             dummy_data = np.random.random((1, 50))  # 50 features
             try:
                 prediction = model.predict(dummy_data)
                 prob_prediction = model.predict_proba(dummy_data)
-                print(f"✅ Prediction works: {prediction[0]}")
-                print(f"✅ Probability works: {prob_prediction[0]}")
+                print(f"Prediction works: {prediction[0]}")
+                print(f"Probability works: {prob_prediction[0]}")
             except Exception as e:
-                print(f"⚠️ Prediction failed (expected with dummy data): {e}")
+                print(f"Warning: Prediction failed (expected with dummy data): {e}")
                 
         else:
-            print(f"❌ Model file not found: {model_path}")
+            print(f"Model file not found: {model_path}")
             
     except Exception as e:
-        print(f"❌ Model loading error: {e}")
+        print(f"Model loading error: {e}")
 
 if __name__ == "__main__":
     test_basic_functionality()
@@ -106,4 +106,4 @@ if __name__ == "__main__":
     test_direct_model_loading()
     
     print("\n" + "=" * 50)
-    print("✅ Basic compatibility testing completed!")
+    print("Basic compatibility testing completed!")

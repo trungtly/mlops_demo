@@ -1,20 +1,34 @@
 name: Data Quality and Model Monitoring
 
+# Disabled - uncomment to re-enable workflows
+# on:
+#   schedule:
+#     # Run daily at 6 AM UTC
+#     - cron: '0 6 * * *'
+#   workflow_dispatch:
+#     inputs:
+#       check_data_drift:
+#         description: 'Check for data drift'
+#         required: false
+#         default: true
+#         type: boolean
+#       check_model_performance:
+#         description: 'Check model performance'
+#         required: false
+#         default: true
+#         type: boolean
 on:
-  schedule:
-    # Run daily at 6 AM UTC
-    - cron: '0 6 * * *'
-  workflow_dispatch:
+  workflow_dispatch: # Manual trigger only
     inputs:
       check_data_drift:
         description: 'Check for data drift'
         required: false
-        default: 'true'
+        default: true
         type: boolean
       check_model_performance:
         description: 'Check model performance'
         required: false
-        default: 'true'
+        default: true
         type: boolean
 
 jobs:
@@ -91,26 +105,26 @@ jobs:
         # Check for missing values
         missing_pct = (df.isnull().sum() / len(df) * 100).round(2)
         if missing_pct.sum() > 0:
-            print('\\n⚠️  Missing values detected:')
+            print('\\nWarning: Missing values detected:')
             print(missing_pct[missing_pct > 0])
         else:
-            print('\\n✅ No missing values detected')
+            print('\\nNo missing values detected')
         
         # Check for duplicates
         duplicates = df.duplicated().sum()
         if duplicates > 0:
-            print(f'\\n⚠️  {duplicates} duplicate rows detected')
+            print(f'\\nWarning: {duplicates} duplicate rows detected')
         else:
-            print('\\n✅ No duplicate rows detected')
+            print('\\nNo duplicate rows detected')
         
         # Check feature distributions
         feature_stats = df.describe()
-        print('\\n📊 Feature statistics:')
+        print('\\nFeature statistics:')
         print(feature_stats[['Amount', 'V1', 'V2', 'V3']].round(3))
         
         # Check class balance
         class_dist = df['Class'].value_counts(normalize=True)
-        print('\\n🎯 Class distribution:')
+        print('\\nClass distribution:')
         print(f'Normal: {class_dist[0]:.1%}')
         print(f'Fraud: {class_dist[1]:.1%}')
         
@@ -123,7 +137,7 @@ jobs:
         if class_dist[1] < 0.001 or class_dist[1] > 0.1:
             quality_score -= 15
             
-        print(f'\\n📈 Overall Data Quality Score: {quality_score}/100')
+        print(f'\\nOverall Data Quality Score: {quality_score}/100')
         
         # Save quality report
         with open('data_quality_report.txt', 'w') as f:
@@ -174,15 +188,15 @@ jobs:
                 'drift_detected': drift_detected
             }
             
-            status = '🚨 DRIFT DETECTED' if drift_detected else '✅ NO DRIFT'
+            status = 'DRIFT DETECTED' if drift_detected else 'NO DRIFT'
             print(f'{feature}: {status} (KS={ks_stat:.3f}, p={p_value:.3f})')
         
         # Overall drift assessment
         total_drift = sum(1 for r in drift_results.values() if r['drift_detected'])
         drift_severity = 'HIGH' if total_drift >= 3 else 'MEDIUM' if total_drift >= 2 else 'LOW'
         
-        print(f'\\n📊 Drift Summary: {total_drift}/{len(features_to_check)} features showing drift')
-        print(f'🎯 Drift Severity: {drift_severity}')
+        print(f'\\nDrift Summary: {total_drift}/{len(features_to_check)} features showing drift')
+        print(f'Drift Severity: {drift_severity}')
         
         # Save drift report
         import json
@@ -229,7 +243,7 @@ jobs:
         recall = recall_score(true_labels, predictions, zero_division=0)
         f1 = f1_score(true_labels, predictions, zero_division=0)
         
-        print(f'📊 Current Model Performance:')
+        print(f'Current Model Performance:')
         print(f'   Accuracy:  {accuracy:.3f}')
         print(f'   Precision: {precision:.3f}')
         print(f'   Recall:    {recall:.3f}')
@@ -250,7 +264,7 @@ jobs:
             'f1': f1
         }
         
-        print(f'\\n📈 Performance vs Baseline:')
+        print(f'\\nPerformance vs Baseline:')
         performance_alerts = []
         
         for metric, current_val in current_metrics.items():
@@ -258,13 +272,13 @@ jobs:
             degradation = (baseline_val - current_val) / baseline_val * 100
             
             if degradation > 10:
-                status = '🚨 CRITICAL'
+                status = 'CRITICAL'
                 performance_alerts.append(f'{metric}: {degradation:.1f}% degradation')
             elif degradation > 5:
-                status = '⚠️  WARNING'
+                status = 'WARNING'
                 performance_alerts.append(f'{metric}: {degradation:.1f}% degradation')
             else:
-                status = '✅ OK'
+                status = 'OK'
             
             print(f'   {metric.capitalize()}: {status} ({current_val:.3f} vs {baseline_val:.3f})')
         
@@ -279,11 +293,11 @@ jobs:
             }, f, indent=2)
         
         if performance_alerts:
-            print(f'\\n🚨 PERFORMANCE ALERTS: {len(performance_alerts)} issues detected')
+            print(f'\\nPERFORMANCE ALERTS: {len(performance_alerts)} issues detected')
             for alert in performance_alerts:
                 print(f'   - {alert}')
         else:
-            print(f'\\n✅ Model performance within acceptable thresholds')
+            print(f'\\nModel performance within acceptable thresholds')
         "
 
     - name: Generate monitoring summary
@@ -300,24 +314,24 @@ jobs:
         try:
             with open('drift_report.json', 'r') as f:
                 drift_data = json.load(f)
-            print(f'🔍 Data Drift: {drift_data[\"drift_severity\"]} ({drift_data[\"features_with_drift\"]}/{drift_data[\"total_features_checked\"]} features)')
+            print(f'Data Drift: {drift_data[\"drift_severity\"]} ({drift_data[\"features_with_drift\"]}/{drift_data[\"total_features_checked\"]} features)')
         except:
-            print('🔍 Data Drift: Not checked')
+            print('Data Drift: Not checked')
         
         try:
             with open('performance_report.json', 'r') as f:
                 perf_data = json.load(f)
             alerts_count = len(perf_data['alerts'])
-            print(f'📊 Model Performance: {alerts_count} alerts detected')
+            print(f'Model Performance: {alerts_count} alerts detected')
             
             if alerts_count > 0:
                 print('   Alerts:')
                 for alert in perf_data['alerts']:
                     print(f'   - {alert}')
         except:
-            print('📊 Model Performance: Not checked')
+            print('Model Performance: Not checked')
         
-        print(f'📅 Report generated: {datetime.now().strftime(\"%Y-%m-%d %H:%M:%S UTC\")}')
+        print(f'Report generated: {datetime.now().strftime(\"%Y-%m-%d %H:%M:%S UTC\")}')
         "
 
     - name: Upload monitoring reports

@@ -3,14 +3,17 @@
 
 name: MLOps Pipeline
 
+# Disabled - uncomment to re-enable workflows
+# on:
+#   push:
+#     branches: [main, develop, feature/*]
+#   pull_request:
+#     branches: [main, develop]
+#   schedule:
+#     # Run model retraining weekly
+#     - cron: '0 2 * * 1'
 on:
-  push:
-    branches: [main, develop, feature/*]
-  pull_request:
-    branches: [main, develop]
-  schedule:
-    # Run model retraining weekly
-    - cron: '0 2 * * 1'
+  workflow_dispatch: # Manual trigger only
 
 env:
   PYTHON_VERSION: '3.9'
@@ -232,15 +235,15 @@ jobs:
             ('f1_score', min_f1)
         ]:
             if metrics[metric] < threshold:
-                print(f'❌ {metric}: {metrics[metric]:.4f} < {threshold}')
+                print(f'FAIL {metric}: {metrics[metric]:.4f} < {threshold}')
                 passed = False
             else:
-                print(f'✅ {metric}: {metrics[metric]:.4f} >= {threshold}')
+                print(f'PASS {metric}: {metrics[metric]:.4f} >= {threshold}')
                 
         if not passed:
             raise SystemExit('Model performance below thresholds!')
         else:
-            print('🎉 All performance thresholds passed!')
+            print('All performance thresholds passed!')
         "
         
     - name: Upload model artifacts
@@ -497,19 +500,19 @@ jobs:
     steps:
     - name: Deploy to staging
       run: |
-        echo "🚀 Deploying to staging environment..."
+        echo "Deploying to staging environment..."
         echo "Environment: staging"
         echo "Image: fraud-detection:${{ github.sha }}"
-        echo "✅ Deployment completed"
+        echo "Deployment completed"
         
     - name: Run smoke tests
       run: |
-        echo "🧪 Running staging smoke tests..."
-        echo "✅ All smoke tests passed"
+        echo "Running staging smoke tests..."
+        echo "All smoke tests passed"
         
     - name: Notify deployment
       run: |
-        echo "📢 Staging deployment notification sent"
+        echo "Staging deployment notification sent"
 
   # Production Deployment (Manual approval)
   deploy-production:
@@ -522,20 +525,20 @@ jobs:
     steps:
     - name: Deploy to production
       run: |
-        echo "🚀 Deploying to production environment..."
+        echo "Deploying to production environment..."
         echo "Environment: production"  
         echo "Image: fraud-detection:${{ github.sha }}"
-        echo "✅ Production deployment completed"
+        echo "Production deployment completed"
         
     - name: Run production health check
       run: |
-        echo "🏥 Running production health checks..."
-        echo "✅ All health checks passed"
+        echo "Running production health checks..."
+        echo "All health checks passed"
         
     - name: Update monitoring dashboards
       run: |
-        echo "📊 Updating monitoring dashboards..."
-        echo "✅ Dashboards updated"
+        echo "Updating monitoring dashboards..."
+        echo "Dashboards updated"
 
 # Model Monitoring & Drift Detection (Scheduled)
   model-monitoring:
@@ -567,7 +570,7 @@ jobs:
         
     - name: Generate monitoring report
       run: |
-        echo "📊 Generating monitoring report..."
+        echo "Generating monitoring report..."
         echo "Model performance: Stable"
         echo "Data drift: Within acceptable range"
-        echo "✅ Monitoring completed"
+        echo "Monitoring completed"
