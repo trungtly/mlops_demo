@@ -82,3 +82,4 @@ data/splits/*.pkl
 # Large model files (but keep metadata)
 !models/*.json
 *.pkl
+.aider*
