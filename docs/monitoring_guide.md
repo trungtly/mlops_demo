@@ -150,3 +150,6 @@ Common issues:
 4. Review and adjust thresholds periodically
 5. Maintain a versioned history of monitoring reports
 6. Automate the monitoring workflow
+## Alert Escalation
+
+Critical drift alerts should trigger model retraining pipeline.
