@@ -320,3 +320,4 @@ class CompatibleModel:
 # Global instance for easy access
 feature_schema = FeatureSchema()
 compatibility_layer = ModelCompatibilityLayer()
+# Feature schema definitions and type constraints
