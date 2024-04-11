@@ -97,3 +97,7 @@ mlops_demo/
 - A/B testing framework for model deployment
 - Containerization with Docker for easy deployment
 - Online learning capabilities for continuous model updates
+## Next Steps
+
+- Implement A/B testing framework
+- Add model versioning with DVC
