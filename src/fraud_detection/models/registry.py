@@ -285,3 +285,4 @@ class ModelRegistry:
 
 # Global registry instance
 model_registry = ModelRegistry()
+# Model registry for versioning and deployment tracking
