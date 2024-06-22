@@ -190,4 +190,4 @@ def pytest_collection_modifyitems(config, items):
     skip_slow = pytest.mark.skip(reason="slow test skipped (use -m slow to run)")
     for item in items:
         if "slow" in item.keywords:
-            item.add_marker(skip_slow)
+            item.add_marker(skip_slow)# TODO: add parameterized fixtures for edge cases
