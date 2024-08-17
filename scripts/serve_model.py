@@ -184,3 +184,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+# Default port: 8080, configurable via --port flag
