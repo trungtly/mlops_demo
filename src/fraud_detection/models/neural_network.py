@@ -473,3 +473,4 @@ def create_neural_network_model(model_type: str, config: Optional[Dict[str, Any]
         raise ValueError(f"Unknown model type: {model_type}. Available: {list(models.keys())}")
     
     return models[model_type](config)
+# Neural network model for fraud detection
