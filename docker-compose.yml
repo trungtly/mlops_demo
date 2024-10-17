@@ -141,3 +141,4 @@ volumes:
   postgres-data:
   prometheus-data:
   grafana-data:
+# docker-compose up --build to rebuild images
