@@ -155,3 +155,6 @@ For complete results, see the [Project Report](docs/project_report.pdf).
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## Data Pipeline
+
+Data flows through ingestion -> validation -> feature engineering -> training.
