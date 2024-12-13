@@ -198,3 +198,7 @@ Actual No Fraud  42,759    37
 - **XGBoost**: learning_rate=0.1, max_depth=6, n_estimators=100
 - **LightGBM**: learning_rate=0.1, num_leaves=31, n_estimators=100
 - **Ensemble Weights**: RF=0.25, XGB=0.35, LGB=0.30, LR=0.10
+## Limitations
+
+- Model performance may degrade on transactions outside training distribution
+- Real-time latency depends on feature computation overhead
