@@ -251,3 +251,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+# Data ingestion module - handles raw data loading and initial parsing
