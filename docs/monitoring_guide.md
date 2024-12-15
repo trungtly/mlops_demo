@@ -153,3 +153,7 @@ Common issues:
 ## Alert Escalation
 
 Critical drift alerts should trigger model retraining pipeline.
+
+## Monitoring Stack
+
+Prometheus + Grafana for infrastructure, custom drift detection for ML.
