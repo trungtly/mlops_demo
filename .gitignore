@@ -83,3 +83,5 @@ data/splits/*.pkl
 !models/*.json
 *.pkl
 .aider*
+# Temporary notebooks
+*.tmp.ipynb
