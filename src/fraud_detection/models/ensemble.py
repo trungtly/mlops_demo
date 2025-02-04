@@ -410,3 +410,4 @@ def create_ensemble_model(model_type: str, config: Optional[Dict[str, Any]] = No
         raise ValueError(f"Unknown model type: {model_type}. Available: {list(models.keys())}")
     
     return models[model_type](config)
+# Ensemble methods combining multiple base models
