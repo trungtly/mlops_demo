@@ -146,3 +146,5 @@ if __name__ == '__main__':
 
     print("Data Drift Report:")
     print(drift_report)
+
+# Data and concept drift detection
