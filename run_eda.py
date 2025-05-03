@@ -271,3 +271,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+# EDA pipeline: generates visualizations and statistical summaries
