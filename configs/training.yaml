@@ -69,3 +69,4 @@ output:
   save_predictions: true
   save_feature_importance: true
   save_plots: true# early_stopping_patience: consider increasing for larger datasets
+# batch_size tuning note: tested 32, 64, 128
