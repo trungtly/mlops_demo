@@ -271,3 +271,4 @@ class ModelRegistry:
         best_model_name = comparison.loc[best_idx, 'model_name']
         
         return best_model_name, self.models[best_model_name]
+# Base model interface for fraud detection models
