@@ -204,4 +204,4 @@ validate-data:
 
 # Model comparison
 compare-models:
-	python -c "from fraud_detection.models.base import ModelRegistry; registry = ModelRegistry(); print(registry.compare_models())"
+	python -c "from fraud_detection.models.base import ModelRegistry; registry = ModelRegistry(); print(registry.compare_models())"# Clean artifacts: make clean
