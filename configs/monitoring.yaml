@@ -41,4 +41,4 @@ reporting:
     - csv
     - yaml
   include_visualizations: true
-  store_predictions: true
+  store_predictions: true# drift_threshold: 0.05 for PSI, 0.1 for KS test
