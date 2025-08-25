@@ -12,3 +12,7 @@
 - May 2021: Implemented feature engineering pipeline
 - Mar 2021: Implemented data ingestion capabilities
 - Jan 2021: Initial project setup
+
+### Unreleased
+- Improved feature selection pipeline
+- Updated drift detection thresholds
