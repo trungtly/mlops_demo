@@ -138,3 +138,5 @@ if __name__ == '__main__':
         print(f"    Current: {values['current']:.4f}, Baseline: {values['baseline']:.4f}")
         print(f"    Degradation: {values['degradation_pct']:.2f}%")
         print(f"    Status: {values['status']}")
+
+# Real-time model performance monitoring
