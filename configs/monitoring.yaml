@@ -1,0 +1,44 @@
+# Monitoring configuration file
+# Controls data drift detection and model performance monitoring
+
+# Features to monitor for drift
+features_to_monitor:
+  # Time features
+  - V1
+  - V2
+  - V3
+  - V4
+  - V5
+  - V10
+  - V14
+  - V17
+  # Amount feature
+  - Amount
+
+# Baseline metrics for model performance comparison
+baseline_metrics:
+  accuracy: 0.999
+  precision: 0.864
+  recall: 0.901
+  f1_score: 0.882
+  roc_auc: 0.987
+  pr_auc: 0.842
+
+# Drift detection thresholds
+drift_thresholds:
+  ks_p_value: 0.05
+  psi_minor: 0.1
+  psi_major: 0.25
+
+# Alert thresholds for performance degradation
+performance_alert_thresholds:
+  warning_degradation_pct: 5.0
+  critical_degradation_pct: 10.0
+
+# Reporting configuration
+reporting:
+  output_format: 
+    - csv
+    - yaml
+  include_visualizations: true
+  store_predictions: true
