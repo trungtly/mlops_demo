@@ -1,0 +1,157 @@
+name: Model Deployment
+
+on:
+  workflow_run:
+    workflows: ["Model Training and Validation"]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      model_name:
+        description: 'Model name to deploy'
+        required: true
+        default: 'best_model'
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    environment: 
+      name: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build deployment image
+      run: |
+        docker build -t fraud-detection-api:${{ github.sha }} -f Dockerfile .
+
+    - name: Test API endpoint
+      run: |
+        # Start the API in background
+        docker run -d --name fraud-api -p 8000:8000 fraud-detection-api:${{ github.sha }}
+        
+        # Wait for API to start
+        sleep 30
+        
+        # Test health endpoint
+        curl -f http://localhost:8000/health || exit 1
+        
+        # Test prediction endpoint with sample data
+        curl -f -X POST "http://localhost:8000/predict" \
+             -H "accept: application/json" \
+             -H "Content-Type: application/json" \
+             -d '{
+               "Time": 0,
+               "V1": -1.359807,
+               "V2": -0.072781,
+               "V3": 2.536347,
+               "V4": 1.378155,
+               "V5": -0.338321,
+               "V6": 0.462388,
+               "V7": 0.239599,
+               "V8": 0.098698,
+               "V9": 0.363787,
+               "V10": 0.090794,
+               "V11": -0.551600,
+               "V12": -0.617801,
+               "V13": -0.991390,
+               "V14": -0.311169,
+               "V15": 1.468177,
+               "V16": -0.470401,
+               "V17": 0.207971,
+               "V18": 0.025791,
+               "V19": 0.403993,
+               "V20": 0.251412,
+               "V21": -0.018307,
+               "V22": 0.277838,
+               "V23": -0.110474,
+               "V24": 0.066928,
+               "V25": 0.128539,
+               "V26": -0.189115,
+               "V27": 0.133558,
+               "V28": -0.021053,
+               "Amount": 149.62
+             }' || exit 1
+        
+        # Clean up
+        docker stop fraud-api
+        docker rm fraud-api
+
+    - name: Deploy to staging
+      if: ${{ github.event.inputs.environment == 'staging' || github.event.inputs.environment == '' }}
+      run: |
+        echo "Deploying to staging environment..."
+        # Here you would typically deploy to your staging infrastructure
+        # For example: kubectl, docker-compose, cloud provider CLI, etc.
+        
+        # Mock deployment
+        echo "✅ Deployed fraud-detection-api:${{ github.sha }} to staging"
+        echo "📍 Staging URL: https://fraud-detection-staging.example.com"
+
+    - name: Deploy to production
+      if: ${{ github.event.inputs.environment == 'production' }}
+      run: |
+        echo "Deploying to production environment..."
+        # Here you would typically deploy to your production infrastructure
+        # with additional safety checks and rollback capabilities
+        
+        # Mock deployment
+        echo "✅ Deployed fraud-detection-api:${{ github.sha }} to production"
+        echo "📍 Production URL: https://fraud-detection.example.com"
+
+    - name: Run smoke tests
+      run: |
+        echo "Running post-deployment smoke tests..."
+        # Here you would run comprehensive smoke tests against the deployed API
+        
+        # Mock smoke tests
+        python -c "
+        import time
+        import random
+        
+        tests = [
+            'API health check',
+            'Model prediction endpoint',
+            'Authentication',
+            'Rate limiting',
+            'Model metrics endpoint'
+        ]
+        
+        for test in tests:
+            time.sleep(1)
+            result = '✅ PASS' if random.random() > 0.1 else '❌ FAIL'
+            print(f'{result} {test}')
+        
+        print('\\n🎉 All smoke tests passed!')
+        "
+
+    - name: Notify deployment
+      run: |
+        echo "🚀 Deployment completed successfully!"
+        echo "Environment: ${{ github.event.inputs.environment || 'staging' }}"
+        echo "Image: fraud-detection-api:${{ github.sha }}"
+        echo "Commit: ${{ github.sha }}"

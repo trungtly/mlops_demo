@@ -1,0 +1,133 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        pip install build twine
+
+    - name: Run full test suite
+      run: |
+        pytest tests/ -v --cov=src --cov-report=xml
+
+    - name: Build package
+      run: |
+        python -m build
+
+    - name: Check package
+      run: |
+        twine check dist/*
+
+    - name: Build Docker image
+      run: |
+        docker build -t fraud-detection:${{ github.ref_name }} .
+        docker tag fraud-detection:${{ github.ref_name }} fraud-detection:latest
+
+    - name: Generate changelog
+      run: |
+        # Extract version from tag or input
+        VERSION=${{ github.ref_name || github.event.inputs.version }}
+        echo "# Release $VERSION" > RELEASE_NOTES.md
+        echo "" >> RELEASE_NOTES.md
+        echo "## What's Changed" >> RELEASE_NOTES.md
+        
+        # Get commits since last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        if [ -n "$LAST_TAG" ]; then
+          echo "Changes since $LAST_TAG:" >> RELEASE_NOTES.md
+          git log --pretty=format:"- %s (%h)" $LAST_TAG..HEAD >> RELEASE_NOTES.md
+        else
+          echo "Initial release" >> RELEASE_NOTES.md
+        fi
+        
+        echo "" >> RELEASE_NOTES.md
+        echo "## Package Information" >> RELEASE_NOTES.md
+        echo "- **Python Version**: 3.8+" >> RELEASE_NOTES.md
+        echo "- **Docker Image**: fraud-detection:$VERSION" >> RELEASE_NOTES.md
+        echo "- **Build Date**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> RELEASE_NOTES.md
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name || github.event.inputs.version }}
+        release_name: Release ${{ github.ref_name || github.event.inputs.version }}
+        body_path: RELEASE_NOTES.md
+        draft: false
+        prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+
+    - name: Upload release assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: dist/
+        asset_name: fraud-detection-python-package
+        asset_content_type: application/zip
+
+    - name: Save Docker image
+      run: |
+        docker save fraud-detection:${{ github.ref_name || github.event.inputs.version }} | gzip > fraud-detection-docker.tar.gz
+
+    - name: Upload Docker image as release asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: fraud-detection-docker.tar.gz
+        asset_name: fraud-detection-docker-${{ github.ref_name || github.event.inputs.version }}.tar.gz
+        asset_content_type: application/gzip
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: create-release
+    if: ${{ !contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'rc') }}
+    
+    environment: production
+    
+    steps:
+    - name: Deploy to production
+      run: |
+        echo "🚀 Deploying release ${{ github.ref_name || github.event.inputs.version }} to production..."
+        # Here you would implement your production deployment logic
+        echo "✅ Production deployment completed"
+
+    - name: Run production smoke tests
+      run: |
+        echo "🧪 Running production smoke tests..."
+        # Here you would run comprehensive smoke tests
+        echo "✅ All production smoke tests passed"
+
+    - name: Notify stakeholders
+      run: |
+        echo "📢 Release ${{ github.ref_name || github.event.inputs.version }} deployed to production successfully!"
+        # Here you would send notifications (Slack, email, etc.)

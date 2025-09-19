@@ -1,0 +1,71 @@
+# Training configuration for fraud detection models
+
+data:
+  dataset_name: "mlg-ulb/creditcardfraud"
+  target_column: "Class"
+  time_column: "Time"
+  amount_column: "Amount"
+  test_size: 0.2
+  val_size: 0.2
+  random_seed: 42
+
+preprocessing:
+  imbalance_method: "none"  # Options: none, undersample, oversample
+  scaling_method: "robust"  # Options: standard, robust, minmax
+  create_time_features: true
+  create_amount_features: true
+
+models:
+  logistic_regression:
+    C: 1.0
+    penalty: "l2"
+    solver: "liblinear"
+    class_weight: "balanced"
+    max_iter: 1000
+  
+  random_forest:
+    n_estimators: 100
+    max_depth: 10
+    min_samples_split: 10
+    min_samples_leaf: 5
+    class_weight: "balanced"
+  
+  xgboost:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    scale_pos_weight: 99  # Adjust for imbalance (normal/fraud ratio)
+    eval_metric: "logloss"
+  
+  lightgbm:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    num_leaves: 31
+    class_weight: "balanced"
+
+training:
+  models_to_train: ["logistic_regression", "xgboost", "lightgbm"]
+  cross_validation: false
+  cv_folds: 5
+  
+evaluation:
+  primary_metric: "pr_auc"  # Options: roc_auc, pr_auc, f1_score, cost
+  cost_fp: 1.0  # Cost of false positive
+  cost_fn: 10.0  # Cost of false negative
+  threshold_optimization: true
+  
+mlflow:
+  experiment_name: "fraud_detection_experiment"
+  tracking_uri: "sqlite:///experiments/mlflow.db"
+  log_model: true
+  log_artifacts: true
+
+output:
+  save_predictions: true
+  save_feature_importance: true
+  save_plots: true
