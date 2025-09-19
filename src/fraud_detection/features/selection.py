@@ -1,6 +1,9 @@
+"""Feature selection for fraud detection."""
+
 import pandas as pd
 import numpy as np
-from typing import List, Dict, Tuple, Optional, Union
+import logging
+from typing import Dict, List, Optional, Tuple, Union
 from sklearn.feature_selection import (
     SelectKBest, f_classif, mutual_info_classif, RFE, RFECV,
     VarianceThreshold, SelectFromModel
@@ -8,14 +11,22 @@ from sklearn.feature_selection import (
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
-import warnings
-warnings.filterwarnings('ignore')
+import xgboost as xgb
+import lightgbm as lgb
+
+logger = logging.getLogger(__name__)
 
 
 class FraudFeatureSelector:
     """Feature selection methods for fraud detection."""
     
     def __init__(self, config: Optional[Dict] = None):
+        """
+        Initialize feature selector.
+        
+        Args:
+            config: Configuration dictionary
+        """
         self.config = config or {}
         self.selected_features = {}
         self.feature_scores = {}
@@ -26,7 +37,18 @@ class FraudFeatureSelector:
         X: pd.DataFrame, 
         threshold: float = 0.01
     ) -> Tuple[pd.DataFrame, List[str]]:
-        """Remove features with low variance."""
+        """
+        Remove features with low variance.
+        
+        Args:
+            X: Input features
+            threshold: Variance threshold
+            
+        Returns:
+            Tuple of (filtered DataFrame, removed features)
+        """
+        logger.info(f"Removing low variance features with threshold {threshold}")
+        
         selector = VarianceThreshold(threshold=threshold)
         X_selected = selector.fit_transform(X)
         
@@ -36,17 +58,30 @@ class FraudFeatureSelector:
         self.selectors['variance'] = selector
         self.selected_features['variance'] = selected_features
         
-        print(f"Removed {len(removed_features)} low variance features")
+        logger.info(f"Removed {len(removed_features)} low variance features")
         
         return pd.DataFrame(X_selected, columns=selected_features, index=X.index), removed_features
     
     def correlation_filter(
         self, 
         X: pd.DataFrame, 
-        threshold: float = 0.95
+        threshold: float = 0.95,
+        method: str = 'pearson'
     ) -> Tuple[pd.DataFrame, List[str]]:
-        """Remove highly correlated features."""
-        corr_matrix = X.corr().abs()
+        """
+        Remove highly correlated features.
+        
+        Args:
+            X: Input features
+            threshold: Correlation threshold
+            method: Correlation method ('pearson', 'spearman', or 'kendall')
+            
+        Returns:
+            Tuple of (filtered DataFrame, removed features)
+        """
+        logger.info(f"Removing highly correlated features with threshold {threshold}")
+        
+        corr_matrix = X.corr(method=method).abs()
         
         # Create mask for upper triangle
         upper_triangle = np.triu(np.ones_like(corr_matrix, dtype=bool), k=1)
@@ -66,7 +101,7 @@ class FraudFeatureSelector:
         selected_features = [col for col in X.columns if col not in to_remove]
         self.selected_features['correlation'] = selected_features
         
-        print(f"Removed {len(to_remove)} highly correlated features")
+        logger.info(f"Removed {len(to_remove)} highly correlated features")
         
         return X[selected_features], to_remove
     
@@ -77,7 +112,19 @@ class FraudFeatureSelector:
         k: int = 50,
         score_func: str = 'f_classif'
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
-        """Select k best features using univariate statistical tests."""
+        """
+        Select k best features using univariate statistical tests.
+        
+        Args:
+            X: Input features
+            y: Target variable
+            k: Number of features to select
+            score_func: Scoring function ('f_classif' or 'mutual_info')
+            
+        Returns:
+            Tuple of (selected DataFrame, feature scores)
+        """
+        logger.info(f"Selecting {k} best features using {score_func}")
         
         score_functions = {
             'f_classif': f_classif,
@@ -102,7 +149,7 @@ class FraudFeatureSelector:
         self.selected_features[f'univariate_{score_func}'] = selected_features
         self.feature_scores[f'univariate_{score_func}'] = feature_scores
         
-        print(f"Selected {len(selected_features)} features using {score_func}")
+        logger.info(f"Selected {len(selected_features)} features using {score_func}")
         
         return pd.DataFrame(X_selected, columns=selected_features, index=X.index), feature_scores
     
@@ -111,13 +158,29 @@ class FraudFeatureSelector:
         X: pd.DataFrame, 
         y: pd.Series, 
         n_features: int = 30,
-        estimator_type: str = 'logistic'
+        estimator_type: str = 'logistic',
+        cv: int = 3
     ) -> Tuple[pd.DataFrame, List[str]]:
-        """Recursive feature elimination with cross-validation."""
+        """
+        Recursive feature elimination with cross-validation.
+        
+        Args:
+            X: Input features
+            y: Target variable
+            n_features: Minimum number of features to select
+            estimator_type: Type of estimator ('logistic', 'random_forest', 'xgb', 'lgb')
+            cv: Number of cross-validation folds
+            
+        Returns:
+            Tuple of (selected DataFrame, selected features)
+        """
+        logger.info(f"Performing recursive feature elimination with {estimator_type}")
         
         estimators = {
-            'logistic': LogisticRegression(random_state=42, max_iter=1000),
-            'random_forest': RandomForestClassifier(n_estimators=50, random_state=42)
+            'logistic': LogisticRegression(random_state=42, max_iter=1000, class_weight='balanced'),
+            'random_forest': RandomForestClassifier(n_estimators=50, random_state=42, class_weight='balanced'),
+            'xgb': xgb.XGBClassifier(n_estimators=50, random_state=42, use_label_encoder=False),
+            'lgb': lgb.LGBMClassifier(n_estimators=50, random_state=42, verbose=-1)
         }
         
         estimator = estimators[estimator_type]
@@ -125,7 +188,7 @@ class FraudFeatureSelector:
         selector = RFECV(
             estimator=estimator,
             step=1,
-            cv=3,
+            cv=cv,
             scoring='roc_auc',
             n_jobs=-1,
             min_features_to_select=min(n_features, X.shape[1])
@@ -137,8 +200,8 @@ class FraudFeatureSelector:
         self.selectors[f'rfe_{estimator_type}'] = selector
         self.selected_features[f'rfe_{estimator_type}'] = selected_features
         
-        print(f"RFE with {estimator_type} selected {len(selected_features)} features")
-        print(f"Optimal number of features: {selector.n_features_}")
+        logger.info(f"RFE with {estimator_type} selected {len(selected_features)} features")
+        logger.info(f"Optimal number of features: {selector.n_features_}")
         
         return pd.DataFrame(X_selected, columns=selected_features, index=X.index), selected_features
     
@@ -149,11 +212,25 @@ class FraudFeatureSelector:
         estimator_type: str = 'random_forest',
         threshold: str = 'median'
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
-        """Select features based on model feature importance."""
+        """
+        Select features based on model feature importance.
+        
+        Args:
+            X: Input features
+            y: Target variable
+            estimator_type: Type of estimator ('random_forest', 'logistic', 'xgb', 'lgb')
+            threshold: Feature importance threshold ('median', 'mean', or float)
+            
+        Returns:
+            Tuple of (selected DataFrame, feature importance scores)
+        """
+        logger.info(f"Performing model-based selection with {estimator_type}")
         
         estimators = {
-            'random_forest': RandomForestClassifier(n_estimators=100, random_state=42),
-            'logistic': LogisticRegression(random_state=42, max_iter=1000, C=0.1)
+            'random_forest': RandomForestClassifier(n_estimators=100, random_state=42, class_weight='balanced'),
+            'logistic': LogisticRegression(random_state=42, max_iter=1000, C=0.1, class_weight='balanced'),
+            'xgb': xgb.XGBClassifier(n_estimators=100, random_state=42, use_label_encoder=False),
+            'lgb': lgb.LGBMClassifier(n_estimators=100, random_state=42, verbose=-1)
         }
         
         estimator = estimators[estimator_type]
@@ -182,7 +259,7 @@ class FraudFeatureSelector:
         self.selected_features[f'model_{estimator_type}'] = selected_features
         self.feature_scores[f'model_{estimator_type}'] = importance_scores
         
-        print(f"Model-based selection with {estimator_type} selected {len(selected_features)} features")
+        logger.info(f"Model-based selection with {estimator_type} selected {len(selected_features)} features")
         
         return pd.DataFrame(X_selected, columns=selected_features, index=X.index), importance_scores
     
@@ -191,14 +268,34 @@ class FraudFeatureSelector:
         X: pd.DataFrame, 
         y: pd.Series, 
         n_bootstrap: int = 100,
-        threshold: float = 0.6
+        threshold: float = 0.6,
+        random_state: int = 42
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
-        """Stability selection using bootstrap sampling."""
+        """
+        Stability selection using bootstrap sampling.
+        
+        Args:
+            X: Input features
+            y: Target variable
+            n_bootstrap: Number of bootstrap iterations
+            threshold: Selection threshold (frequency)
+            random_state: Random seed
+            
+        Returns:
+            Tuple of (selected DataFrame, feature stability scores)
+        """
+        logger.info(f"Performing stability selection with {n_bootstrap} iterations")
+        
+        # Set random seed
+        np.random.seed(random_state)
         
         n_samples, n_features = X.shape
         feature_selection_freq = np.zeros(n_features)
         
         for i in range(n_bootstrap):
+            if i % 10 == 0:
+                logger.info(f"Stability selection: iteration {i+1}/{n_bootstrap}")
+                
             # Bootstrap sampling
             indices = np.random.choice(n_samples, size=n_samples, replace=True)
             X_boot = X.iloc[indices]
@@ -229,7 +326,7 @@ class FraudFeatureSelector:
         self.selected_features['stability'] = selected_features
         self.feature_scores['stability'] = stability_scores
         
-        print(f"Stability selection selected {len(selected_features)} features")
+        logger.info(f"Stability selection selected {len(selected_features)} features")
         
         return X[selected_features], stability_scores
     
@@ -240,21 +337,53 @@ class FraudFeatureSelector:
         methods: List[str] = ['univariate_f_classif', 'rfe_random_forest', 'model_random_forest'],
         voting_threshold: float = 0.5
     ) -> Tuple[pd.DataFrame, Dict[str, int]]:
-        """Ensemble feature selection combining multiple methods."""
+        """
+        Ensemble feature selection combining multiple methods.
         
-        all_selected_features = []
+        Args:
+            X: Input features
+            y: Target variable
+            methods: List of selection methods to combine
+            voting_threshold: Fraction of methods that must select a feature
+            
+        Returns:
+            Tuple of (selected DataFrame, feature votes)
+        """
+        logger.info(f"Performing ensemble selection with methods: {methods}")
+        
         method_results = {}
         
+        # Run each selection method
         for method in methods:
             if method == 'univariate_f_classif':
                 _, _ = self.univariate_selection(X, y, k=50, score_func='f_classif')
                 method_results[method] = self.selected_features['univariate_f_classif']
+            elif method == 'univariate_mutual_info':
+                _, _ = self.univariate_selection(X, y, k=50, score_func='mutual_info')
+                method_results[method] = self.selected_features['univariate_mutual_info']
+            elif method == 'rfe_logistic':
+                _, _ = self.recursive_feature_elimination(X, y, n_features=30, estimator_type='logistic')
+                method_results[method] = self.selected_features['rfe_logistic']
             elif method == 'rfe_random_forest':
                 _, _ = self.recursive_feature_elimination(X, y, n_features=30, estimator_type='random_forest')
                 method_results[method] = self.selected_features['rfe_random_forest']
+            elif method == 'model_logistic':
+                _, _ = self.model_based_selection(X, y, estimator_type='logistic')
+                method_results[method] = self.selected_features['model_logistic']
             elif method == 'model_random_forest':
                 _, _ = self.model_based_selection(X, y, estimator_type='random_forest')
                 method_results[method] = self.selected_features['model_random_forest']
+            elif method == 'model_xgb':
+                _, _ = self.model_based_selection(X, y, estimator_type='xgb')
+                method_results[method] = self.selected_features['model_xgb']
+            elif method == 'model_lgb':
+                _, _ = self.model_based_selection(X, y, estimator_type='lgb')
+                method_results[method] = self.selected_features['model_lgb']
+            elif method == 'stability':
+                _, _ = self.stability_selection(X, y)
+                method_results[method] = self.selected_features['stability']
+            else:
+                logger.warning(f"Unknown selection method: {method}")
         
         # Count votes for each feature
         feature_votes = {}
@@ -272,8 +401,8 @@ class FraudFeatureSelector:
         self.selected_features['ensemble'] = ensemble_features
         self.feature_scores['ensemble'] = feature_votes
         
-        print(f"Ensemble selection selected {len(ensemble_features)} features")
-        print(f"Voting threshold: {min_votes}/{len(methods)}")
+        logger.info(f"Ensemble selection selected {len(ensemble_features)} features")
+        logger.info(f"Voting threshold: {min_votes}/{len(methods)}")
         
         return X[ensemble_features], feature_votes
     
@@ -296,6 +425,7 @@ class FraudFeatureSelector:
         Returns:
             Selected features dataframe
         """
+        logger.info(f"Performing feature selection using method: {method}")
         
         # Remove low variance features first
         X_filtered, _ = self.remove_low_variance_features(X, threshold=0.01)
@@ -316,11 +446,19 @@ class FraudFeatureSelector:
         else:
             raise ValueError(f"Unknown selection method: {method}")
         
+        logger.info(f"Feature selection complete. Selected {X_selected.shape[1]} features.")
         return X_selected
     
     def get_feature_ranking(self, method: str = 'ensemble') -> pd.DataFrame:
-        """Get feature ranking based on selection method."""
+        """
+        Get feature ranking based on selection method.
         
+        Args:
+            method: Selection method
+            
+        Returns:
+            DataFrame with feature ranking
+        """
         if method not in self.feature_scores:
             raise ValueError(f"No scores available for method: {method}")
         
@@ -335,21 +473,74 @@ class FraudFeatureSelector:
         return ranking_df
     
     def save_selection_results(self, filepath: str):
-        """Save feature selection results."""
+        """
+        Save feature selection results to file.
+        
+        Args:
+            filepath: Output file path
+        """
         results = {
             'selected_features': self.selected_features,
-            'feature_scores': self.feature_scores
+            'feature_scores': {
+                k: {str(feat): float(score) for feat, score in v.items()} 
+                for k, v in self.feature_scores.items()
+            }
         }
         
         import json
         with open(filepath, 'w') as f:
-            json.dump(results, f, indent=2, default=str)
+            json.dump(results, f, indent=2)
         
-        print(f"Selection results saved to {filepath}")
+        logger.info(f"Selection results saved to {filepath}")
+    
+    def plot_feature_importance(self, method: str = 'model_random_forest', top_n: int = 20):
+        """
+        Plot feature importance from selection method.
+        
+        Args:
+            method: Selection method
+            top_n: Number of top features to display
+            
+        Returns:
+            Matplotlib figure
+        """
+        if method not in self.feature_scores:
+            raise ValueError(f"No scores available for method: {method}")
+        
+        try:
+            import matplotlib.pyplot as plt
+            
+            # Get feature ranking
+            ranking = self.get_feature_ranking(method)
+            ranking = ranking.head(top_n)
+            
+            # Create plot
+            fig, ax = plt.subplots(figsize=(12, 8))
+            ax.barh(ranking['feature'], ranking['score'])
+            ax.set_xlabel('Importance Score')
+            ax.set_title(f'Top {top_n} Features ({method})')
+            ax.invert_yaxis()  # Display highest importance at the top
+            plt.tight_layout()
+            
+            return fig
+        except ImportError:
+            logger.warning("Matplotlib not available. Cannot create plot.")
+            return None
 
 
 def quick_feature_selection(X: pd.DataFrame, y: pd.Series, n_features: int = 30) -> pd.DataFrame:
-    """Quick feature selection for rapid prototyping."""
+    """
+    Quick feature selection for rapid prototyping.
+    
+    Args:
+        X: Input features
+        y: Target variable
+        n_features: Number of features to select
+        
+    Returns:
+        Selected features DataFrame
+    """
+    logging.info(f"Performing quick feature selection to select {n_features} features")
     selector = FraudFeatureSelector()
     
     # Use univariate selection for speed
@@ -359,9 +550,89 @@ def quick_feature_selection(X: pd.DataFrame, y: pd.Series, n_features: int = 30)
 
 
 def comprehensive_feature_selection(X: pd.DataFrame, y: pd.Series) -> pd.DataFrame:
-    """Comprehensive feature selection using ensemble approach."""
+    """
+    Comprehensive feature selection using ensemble approach.
+    
+    Args:
+        X: Input features
+        y: Target variable
+        
+    Returns:
+        Selected features DataFrame
+    """
+    logging.info("Performing comprehensive feature selection")
     selector = FraudFeatureSelector()
     
     X_selected = selector.select_features(X, y, method='ensemble')
     
     return X_selected
+
+
+def main():
+    """Run feature selection as a standalone module."""
+    import sys
+    from pathlib import Path
+    
+    # Add parent directory to path if run as standalone script
+    current_dir = Path(__file__).resolve().parent
+    parent_dir = current_dir.parent.parent.parent
+    if str(parent_dir) not in sys.path:
+        sys.path.append(str(parent_dir))
+    
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
+    # Load data
+    logger.info("Loading data")
+    from src.fraud_detection.data.ingestion import FraudDataIngestion
+    from src.fraud_detection.features.engineering import create_baseline_features
+    
+    data_ingestion = FraudDataIngestion()
+    df, _ = data_ingestion.run_full_ingestion()
+    
+    # Apply feature engineering
+    df_features = create_baseline_features(df)
+    
+    # Prepare data for feature selection
+    X = df_features.drop(columns=['Class', 'Time'])
+    y = df_features['Class']
+    
+    # Initialize feature selector
+    selector = FraudFeatureSelector()
+    
+    # Apply different selection methods
+    print("\n" + "=" * 50)
+    print("FEATURE SELECTION RESULTS")
+    print("=" * 50)
+    
+    # 1. Variance selection
+    X_var, removed = selector.remove_low_variance_features(X, threshold=0.01)
+    print(f"1. Variance selection: {X.shape[1]} → {X_var.shape[1]} features")
+    
+    # 2. Statistical test selection
+    X_stat, scores = selector.univariate_selection(X_var, y, method='f_classif', k=30)
+    print(f"2. Statistical selection: {X_var.shape[1]} → {X_stat.shape[1]} features")
+    print(f"   Top 5 features: {list(scores.keys())[:5]}")
+    
+    # 3. Model-based selection
+    X_model, importances = selector.model_based_selection(X_var, y, estimator_type='random_forest')
+    print(f"3. Model-based selection: {X_var.shape[1]} → {X_model.shape[1]} features")
+    print(f"   Top 5 features: {list(importances.keys())[:5]}")
+    
+    # 4. Ensemble selection
+    methods = ['univariate_f_classif', 'model_random_forest', 'model_xgb']
+    X_ensemble, votes = selector.ensemble_selection(X_var, y, methods=methods)
+    print(f"4. Ensemble selection: {X_var.shape[1]} → {X_ensemble.shape[1]} features")
+    
+    # Top voted features
+    top_votes = sorted(votes.items(), key=lambda x: x[1], reverse=True)[:5]
+    print(f"   Top 5 features by votes: {[f[0] for f in top_votes]}")
+    
+    print("=" * 50)
+
+
+if __name__ == "__main__":
+    main()
