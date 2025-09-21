@@ -7,6 +7,9 @@ data/interim/*.csv
 # Model files
 models/*.pkl
 models/*.joblib
+monitoring_reports/
+data/reference/
+data/current/
 
 # Python
 __pycache__/
