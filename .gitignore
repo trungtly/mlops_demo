@@ -71,5 +71,10 @@ mlruns/-e
 # macOS
 .DS_Store
 
-# Data files
+# Large data files (but keep sample data)
 *.zip
+data/splits/*.pkl
+!data/sample/*.csv
+
+# Large model files (but keep metadata)
+!models/*.json
