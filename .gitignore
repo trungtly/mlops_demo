@@ -76,5 +76,8 @@ mlruns/-e
 data/splits/*.pkl
 !data/sample/*.csv
 
+# All pickle files (too large for git)
+*.pkl
+
 # Large model files (but keep metadata)
 !models/*.json
