@@ -41,4 +41,4 @@ isort>=5.10.0
 flake8>=5.0.0
 mypy>=0.991
 pre-commit>=2.20.0
-jupyterlab>=3.4.0
+jupyterlab>=3.4.0# pinned for reproducibility
