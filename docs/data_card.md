@@ -238,3 +238,7 @@ python scripts/download_data.py
 - [API Documentation](api_docs.md) - How to use the fraud detection API
 - [Kaggle Dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud) - Original source
 - [Research Paper](https://www.researchgate.net/publication/319867396) - Academic background
+## Data Quality Checks
+
+- Null rate should be < 1% for critical features
+- Transaction amount outliers flagged above 99.9th percentile
