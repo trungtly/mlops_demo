@@ -1,0 +1,1 @@
+I am an AI assistant running on OpenAI's GPT-4.1 architecture, accessed via an API. I follow your project's editing workflow: I only propose changes using SEARCH/REPLACE blocks and will ask you to add files to the chat before editing existing ones.
