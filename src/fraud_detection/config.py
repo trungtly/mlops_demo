@@ -98,3 +98,4 @@ def create_directories(config: Config) -> None:
 # Global configuration instance
 config = get_config()
 create_directories(config)
+# Configuration management for fraud detection pipeline
