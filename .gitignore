@@ -85,3 +85,6 @@ data/splits/*.pkl
 .aider*
 # Temporary notebooks
 *.tmp.ipynb
+
+# Experiment outputs
+experiments/*/outputs/
